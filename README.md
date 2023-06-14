@@ -43,4 +43,9 @@ python MysticOCR.py.py -i <image_path> [-o <output>] [-b <batch_size>] [-w <work
 python MysticOCR.py.py -i input_images/ -o results.csv -b 200 -w 4 -d 1 -bl "0123456789" -p True -P False -show True
 ```
 
+### TODO
+
+Add set recognition & detection, (If anyone could help with this that'd be great.)
+Just create a pull request!
+
 This example command runs the OCR magic card reader script on images in the "input_images" directory. It saves the results to "results.csv" in CSV format. The batch size is set to 200, and 4 worker processes are used for parallel processing. The OCR results include text with bounding box annotations. The characters "0123456789" are ignored during OCR. Paragraph mode is enabled, and the script will display the image with bounding box annotations. Progress updates will be printed during processing.
