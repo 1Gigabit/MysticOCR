@@ -8,9 +8,11 @@ import tqdm
 parser = argparse.ArgumentParser(description="Just a OCR reader for magic cards",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-i", "--image_dir", type=str, required=True)
-parser.add_argument("-o", "--output_file", type=str, required=False)
-parser.add_argument("-O", "--output_dir", type=str, required=False)
-parser.add_argument("-b", "--batch_size", type=int, default=500)
+parser.add_argument("-o", "--output_file", type=str,
+                    required=False, default=None)
+parser.add_argument("-ot", "--output_dir", type=str,
+                    required=False, default=None)
+parser.add_argument("-b", "--batch_size", type=int, default=1000)
 parser.add_argument("-w", "--workers", type=int, default=0)
 parser.add_argument("-d", "--details", type=int, default=2)
 parser.add_argument("-bl", "--blocklist", type=str, default="")
@@ -60,8 +62,12 @@ def main():
                 print('-'*100)
             if (args.output_file is not None):
                 writer.writerow(bounds)
-            if(args.output_dir is not None):
-                cv2.imwrite(args.output_dir + file, im)
+
+            if args.output_dir is not None:
+                if not os.path.exists(args.output_dir):
+                    os.mkdir(args.output_dir)
+                cv2.imwrite(os.path.join(args.output_dir, file), im)
+
 
 if __name__ == '__main__':
     main()
