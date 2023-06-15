@@ -161,5 +161,6 @@ cython_debug/
 data/*
 .vscode/
 result/
-result.csv
+successful*
 db.json
+result.csv

@@ -59,21 +59,21 @@ def main():
                 cv2.imshow('Image', im)
                 cv2.waitKey(1)
             if args.success_dir is not None:
-                if (average_confidence(bounds) >= args.threshold):
-                    if (args.progress_only is not True):
-                        print("PASSED THRESHOLD: " + file)
-                    if not os.path.exists(args.success_dir):
-                        os.mkdir(args.success_dir)
-                        cv2.imwrite(os.path.join(args.success_dir, file), im)
-
+                if not os.path.exists(args.success_dir):
+                    os.mkdir(args.success_dir)
+                    cv2.imwrite(os.path.join(args.success_dir, file), im)
             if args.failed_dir is not None:
-                if average_confidence(bounds) < args.threshold:
-                    if args.output_file is not None:
-                        bounds.append(average_confidence)
-                        if not args.progress_only:
-                            print("FAILED THRESHOLD: " + file)
                 if not os.path.exists(args.failed_dir):
                     os.mkdir(args.failed_dir)
+                    
+            if (average_confidence(bounds) >= args.threshold):
+                bounds.append(average_confidence)
+                if args.progress_only is not True:
+                    print("PASSED THRESHOLD: " + file)
+            else:
+                bounds.append(average_confidence)
+                if args.progress_only is not True:
+                    print("FAILED THRESHOLD: " + file)
 
             if (args.output_file is not None):
 
