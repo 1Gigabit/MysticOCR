@@ -40,8 +40,11 @@ def main():
             pbar.close()
         for file in files:
             file_path = os.path.join(args.image_dir, file)
+            if (args.paragraph == True & args.details == 1):
+                print(
+                    "WARNING: paragraph is set to True, but details is set to 1, output will not include confidence level")
             bounds = reader.readtext(file_path, batch_size=args.batch_size,
-                                     workers=args.workers, detail=args.details, blocklist=args.blocklist, paragraph=args.paragraph, y_ths=0.2, x_ths=5, min_size=10)
+                                     workers=args.workers, detail=args.details, blocklist=args.blocklist, paragraph=args.paragraph, y_ths=0.3, x_ths=1, min_size=10)
 
             if (args.show_image):
                 im = cv2.imread(file_path)
@@ -79,8 +82,10 @@ def main():
                 pbar.update()
             else:
                 print(bounds)
-                print("\n"*3)
+                print("\n"*2)
                 print('-'*100)
+
+
 def average_confidence(bounds):
     sum_confidence = 0
     for bbox in bounds:
