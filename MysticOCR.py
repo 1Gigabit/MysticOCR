@@ -65,7 +65,7 @@ def main():
             if args.failed_dir is not None:
                 if not os.path.exists(args.failed_dir):
                     os.mkdir(args.failed_dir)
-                    
+                    cv2.imwrite(os.path.join(args.failed_dir, file), im)
             if (average_confidence(bounds) >= args.threshold):
                 bounds.append(average_confidence)
                 if args.progress_only is not True:
@@ -87,6 +87,8 @@ def main():
 
 
 def average_confidence(bounds):
+    if(len(bounds) == 0):
+        return -1
     sum_confidence = 0
     for bbox in bounds:
         confidence = bbox[len(bbox)-1]
