@@ -20,6 +20,8 @@ parser.add_argument("-show", "--show-image", type=bool, default=True)
 parser.add_argument("-fd", "--failed_dir", type=str, default=None)
 parser.add_argument("-sd", "--success_dir", type=str, default=None)
 parser.add_argument("-th", "--threshold", type=str, default=0.7)
+parser.add_argument("-wth", "--width_ths", type=float, default=3)
+parser.add_argument("-xth", "--x_ths", tpype=float, default=4)
 args = parser.parse_args()
 
 
@@ -44,7 +46,7 @@ def main():
                 print(
                     "WARNING: paragraph is set to True, but details is set to 1, output will not include confidence level")
             bounds = reader.readtext(file_path, batch_size=args.batch_size,
-                                     workers=args.workers, detail=args.details, blocklist=args.blocklist, paragraph=args.paragraph, y_ths=0.3, x_ths=1, min_size=10)
+                                     workers=args.workers, detail=args.details, blocklist=args.blocklist, paragraph=args.paragraph, x_ths=args.x_ths, width_ths=args.width_ths, min_size=10)
 
             if (args.show_image):
                 im = cv2.imread(file_path)
@@ -87,7 +89,7 @@ def main():
 
 
 def average_confidence(bounds):
-    if(len(bounds) == 0):
+    if (len(bounds) == 0):
         return -1
     sum_confidence = 0
     for bbox in bounds:
