@@ -16,7 +16,7 @@ parser.add_argument("-b", "--batch_size", type=int, default=1)
 parser.add_argument("-w", "--workers", type=int, default=0)
 parser.add_argument("-d", "--details", type=int, default=1)
 parser.add_argument("-bl", "--blocklist", type=str, default="")
-parser.add_argument("-p", "--paragraph", type=bool, default=True)
+parser.add_argument("-p", "--paragraph", type=bool, default=False)
 parser.add_argument("-P", "--progress_only", type=bool, default=False)
 parser.add_argument("-show", "--show-image", type=bool, default=True)
 args = parser.parse_args()
@@ -40,7 +40,7 @@ def main():
         for file in files:
             file_path = os.path.join(args.image_dir, file)
             bounds = reader.readtext(file_path, batch_size=args.batch_size,
-                                     workers=args.workers, detail=args.details, blocklist=args.blocklist, paragraph=True, y_ths=0.2, x_ths=5, min_size=10)
+                                     workers=args.workers, detail=args.details, blocklist=args.blocklist, paragraph=args.paragraph, y_ths=0.2, x_ths=5, min_size=10)
 
             if (args.show_image):
                 im = cv2.imread(file_path)
