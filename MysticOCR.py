@@ -10,8 +10,6 @@ parser = argparse.ArgumentParser(description="Just a OCR reader for magic cards"
 parser.add_argument("-i", "--image_dir", type=str, required=True)
 parser.add_argument("-o", "--output_file", type=str,
                     required=False, default=None)
-parser.add_argument("-ot", "--output_dir", type=str,
-                    required=False, default=None)
 parser.add_argument("-b", "--batch_size", type=int, default=1)
 parser.add_argument("-w", "--workers", type=int, default=0)
 parser.add_argument("-d", "--details", type=int, default=1)
@@ -19,6 +17,9 @@ parser.add_argument("-bl", "--blocklist", type=str, default="")
 parser.add_argument("-p", "--paragraph", type=bool, default=False)
 parser.add_argument("-P", "--progress_only", type=bool, default=False)
 parser.add_argument("-show", "--show-image", type=bool, default=True)
+parser.add_argument("-fd", "--failed_dir", type=str, default=None)
+parser.add_argument("-sd", "--success_dir", type=str, default=None)
+parser.add_argument("-th", "--threshold", type=str, default=0.7)
 args = parser.parse_args()
 
 
@@ -54,19 +55,38 @@ def main():
                     cv2.rectangle(im, tl, br, (10, 255, 0), 2)
                 cv2.imshow('Image', im)
                 cv2.waitKey(1)
+            if args.success_dir is not None:
+                if (average_confidence(bounds) >= args.threshold):
+                    if (args.progress_only is not True):
+                        print("PASSED THRESHOLD: " + file)
+                    if not os.path.exists(args.success_dir):
+                        os.mkdir(args.success_dir)
+                        cv2.imwrite(os.path.join(args.success_dir, file), im)
+
+            if args.failed_dir is not None:
+                if average_confidence(bounds) < args.threshold:
+                    if args.output_file is not None:
+                        bounds.append(average_confidence)
+                        if not args.progress_only:
+                            print("FAILED THRESHOLD: " + file)
+                if not os.path.exists(args.failed_dir):
+                    os.mkdir(args.failed_dir)
+
+            if (args.output_file is not None):
+
+                writer.writerow(bounds)
             if (args.progress_only):
                 pbar.update()
             else:
                 print(bounds)
                 print("\n"*3)
                 print('-'*100)
-            if (args.output_file is not None):
-                writer.writerow(bounds)
-
-            if args.output_dir is not None:
-                if not os.path.exists(args.output_dir):
-                    os.mkdir(args.output_dir)
-                cv2.imwrite(os.path.join(args.output_dir, file), im)
+def average_confidence(bounds):
+    sum_confidence = 0
+    for bbox in bounds:
+        confidence = bbox[len(bbox)-1]
+        sum_confidence += confidence
+    return sum_confidence / len(bounds)
 
 
 if __name__ == '__main__':
