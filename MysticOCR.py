@@ -14,7 +14,7 @@ parser.add_argument("-ot", "--output_dir", type=str,
                     required=False, default=None)
 parser.add_argument("-b", "--batch_size", type=int, default=1)
 parser.add_argument("-w", "--workers", type=int, default=0)
-parser.add_argument("-d", "--details", type=int, default=2)
+parser.add_argument("-d", "--details", type=int, default=1)
 parser.add_argument("-bl", "--blocklist", type=str, default="")
 parser.add_argument("-p", "--paragraph", type=bool, default=True)
 parser.add_argument("-P", "--progress_only", type=bool, default=False)
