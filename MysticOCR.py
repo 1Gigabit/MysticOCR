@@ -40,7 +40,7 @@ def main():
         for file in files:
             file_path = os.path.join(args.image_dir, file)
             bounds = reader.readtext(file_path, batch_size=args.batch_size,
-                                     workers=args.workers, detail=args.details, blocklist=args.blocklist, paragraph=True, y_ths=0.2, x_ths=10, min_size=10)
+                                     workers=args.workers, detail=args.details, blocklist=args.blocklist, paragraph=True, y_ths=0.2, x_ths=5, min_size=10)
 
             if (args.show_image):
                 im = cv2.imread(file_path)
