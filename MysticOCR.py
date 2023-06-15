@@ -61,11 +61,11 @@ def main():
             if args.success_dir is not None:
                 if not os.path.exists(args.success_dir):
                     os.mkdir(args.success_dir)
-                    cv2.imwrite(os.path.join(args.success_dir, file), im)
+                cv2.imwrite(os.path.join(args.success_dir, file), im)
             if args.failed_dir is not None:
                 if not os.path.exists(args.failed_dir):
                     os.mkdir(args.failed_dir)
-                    cv2.imwrite(os.path.join(args.failed_dir, file), im)
+                cv2.imwrite(os.path.join(args.failed_dir, file), im)
             if (average_confidence(bounds) >= args.threshold):
                 bounds.append(average_confidence)
                 if args.progress_only is not True:
