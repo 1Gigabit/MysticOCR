@@ -54,8 +54,7 @@ https://scryfall.com/docs/api/bulk-data
 
 ```shell
 python MatchScryfall -c results.csv -db db.json 
-
-
+```
 ### TODO
 
 Add set recognition & detection, (If anyone could help with this that'd be great.)
