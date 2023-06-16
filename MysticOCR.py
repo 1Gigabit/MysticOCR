@@ -42,17 +42,16 @@ def main():
         if not args.progress_only:
             pbar.close()
         for file in files:
-            file_path = os.path.join(args.image_dir, file)
 
             if args.paragraph and args.details == 1:
                 print("WARNING: paragraph is set to True, but details is set to 1, output will not include confidence level")
             
-            bounds = reader.readtext(file_path, batch_size=args.batch_size,
+            bounds = reader.readtext(file, batch_size=args.batch_size,
                                      workers=args.workers, detail=args.details, blocklist=args.blocklist,
                                      paragraph=args.paragraph, x_ths=args.x_ths, width_ths=args.width_ths, min_size=10)
 
             if args.show_image:
-                im = cv2.imread(file_path)
+                im = cv2.imread(file)
                 for bbox in bounds:
                     # Unpack the bounding box
                     tl, tr, br, bl = bbox[0]
