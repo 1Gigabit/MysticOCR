@@ -15,12 +15,12 @@ parser.add_argument("-b", "--batch_size", type=int, default=1)
 parser.add_argument("-w", "--workers", type=int, default=0)
 parser.add_argument("-d", "--details", type=int, default=1)
 parser.add_argument("-bl", "--blocklist", type=str, default="")
-parser.add_argument("-p", "--paragraph", action="store_true", default=False)
-parser.add_argument("-P", "--progress_only", action="store_true", default=False)
-parser.add_argument("-show", "--show_image", action="store_true", default=True)
+parser.add_argument("-p", "--paragraph", default=False)
+parser.add_argument("-P", "--progress_only", default=False)
+parser.add_argument("-show", "--show_image", default=True)
 parser.add_argument("-fd", "--failed_dir", type=str, default=None)
 parser.add_argument("-sd", "--success_dir", type=str, default=None)
-parser.add_argument("-th", "--threshold", type=float, default=0.7)
+parser.add_argument("-th", "--threshold", type=float, default=0.6)
 parser.add_argument("-wth", "--width_ths", type=float, default=3)
 parser.add_argument("-xth", "--x_ths", type=float, default=4)
 args = parser.parse_args()
@@ -62,23 +62,26 @@ def main():
                     cv2.rectangle(im, tl, br, (10, 255, 0), 2)
                 cv2.imshow('Image', im)
                 cv2.waitKey(1)
-
-            if args.success_dir is not None:
-                os.makedirs(args.success_dir, exist_ok=True)
-                cv2.imwrite(os.path.join(args.success_dir, file), im)
-
-            if args.failed_dir is not None:
-                os.makedirs(args.failed_dir, exist_ok=True)
-                cv2.imwrite(os.path.join(args.failed_dir, file), im)
-
-            if average_confidence(bounds) >= args.threshold:
-                bounds.append(average_confidence(bounds))
+            avg_confidence = calc_avg_confidence(bounds)
+            if avg_confidence >= args.threshold:
+                bounds.append(avg_confidence)
                 if not args.progress_only:
-                    print("PASSED THRESHOLD:", file)
+                    print("PASSED THRESHOLD:", file)                        
+                if args.success_dir is not None:
+                    os.makedirs(args.success_dir, exist_ok=True)
+                    success_file = os.path.join(args.success_dir,f"{avg_confidence}__"+os.path.basename(file))
+                    cv2.imwrite(success_file,im)
+
+
             else:
-                bounds.append(average_confidence(bounds))
+                bounds.append(avg_confidence)
                 if not args.progress_only:
                     print("FAILED THRESHOLD:", file)
+                if args.failed_dir is not None:
+                    os.makedirs(args.failed_dir, exist_ok=True)
+                    failed_file = os.path.join(args.failed_dir,f"{avg_confidence}__"+os.path.basename(file))
+                    print(failed_file)
+                    cv2.imwrite(failed_file,im)
 
             if args.output_file is not None:
                 writer.writerow(bounds)
@@ -91,7 +94,7 @@ def main():
                 print('-' * 100)
 
 
-def average_confidence(bounds):
+def calc_avg_confidence(bounds):
     if len(bounds) == 0:
         return -1
     sum_confidence = 0
