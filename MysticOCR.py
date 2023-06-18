@@ -71,8 +71,6 @@ def main():
                     os.makedirs(args.success_dir, exist_ok=True)
                     success_file = os.path.join(args.success_dir,f"{avg_confidence}__"+os.path.basename(file))
                     cv2.imwrite(success_file,im)
-
-
             else:
                 bounds.append(avg_confidence)
                 if not args.progress_only:
