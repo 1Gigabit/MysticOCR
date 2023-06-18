@@ -15,7 +15,7 @@ import tqdm
 parser = argparse.ArgumentParser(description="Just an OCR reader for magic cards",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-i", "--image_dir", type=str, required=True)
-parser.add_argument("-o", "--output_file", type=str, default=None)
+parser.add_argument("-o", "--output_file", type=str, required=True)
 parser.add_argument("-b", "--batch_size", type=int, default=1)
 parser.add_argument("-w", "--workers", type=int, default=0)
 parser.add_argument("-d", "--details", type=int, default=1)
