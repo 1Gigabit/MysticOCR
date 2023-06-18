@@ -1,8 +1,12 @@
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 import ast
 import csv
+import itertools
 import json
 import sqlite3
+import sys
+import threading
+import time
 from fuzzywuzzy import fuzz
 # Define the command-line arguments
 parser = ArgumentParser(description="Similarity matcher for magic cards",
@@ -11,7 +15,6 @@ parser.add_argument("-c", "--csv_file",
                     help="Path to the CSV file", required=True)
 parser.add_argument("-db", "--database_file",
                     help="Path to the database file", required=True)
-
 args = parser.parse_args()
 
 
@@ -26,9 +29,25 @@ def main():
         csv_reader = csv.reader(csv_file, delimiter=",")
         next(csv_reader)  # Skip the header row
 
-        # Iterate over each row in the CSV file
+        done = False
+        count = 0
+        def animated_loading():
+            for c in itertools.cycle(['|', '/', '-', '\\']):
+                if done:
+                    break
+                sys.stdout.write(
+                    f'\rSearching database  {c} Working on line {count}')
+                sys.stdout.flush()
+
+                time.sleep(0.05)
+            sys.stdout.write('\rDone!             ')
+        t = threading.Thread(target=animated_loading, daemon=True)
+        t.start()
         cards = cursor.fetchall()
+        
+        # Iterate over each row in the CSV file
         for row in csv_reader:
+            count += 1
             if len(row) >= 1:
                 highest_ratio = 0
                 image_text = ""
@@ -36,7 +55,7 @@ def main():
                 row_literal = ast.literal_eval(row[0])
                 if isinstance(row_literal, int):
                     break
-                if(row_literal is int):
+                if (row_literal is int):
                     break
                 for card in cards:
 
@@ -52,8 +71,7 @@ def main():
                         break
                     if current_ratio == 100:
                         break
-
-                print(f'{highest_ratio}%  :  {image_text}  :  {db_text}')
+        done = True
 
 
 if __name__ == '__main__':
