@@ -25,7 +25,7 @@ The script can be executed with the following command:
 python MysticOCR.py.py -i <image_path> [-o <output_file>] [-b <batch_size>] [-w <workers>] [-d <details>] [-bl <blocklist>] [-p <paragraph>] [-P <progress_only>] [-show <show_image>]
 ```
 
-### Arguments
+### Arguments (Needs to be updated)
 
 - `-i, --image_path` (required): The path to the directory containing the input images. Images should be in JPEG format.
 - `-o, --output_file` (optional): The path to the output CSV file to save the OCR results. If not specified, the results will not be saved.
@@ -57,6 +57,9 @@ python MatchScryfall -c results.csv -db db.json
 ```
 ### TODO
 
+- Rewrite arguments section of README.
+
 Add set recognition & detection, (If anyone could help with this that'd be great.)
+
 Just create a pull request!
 
