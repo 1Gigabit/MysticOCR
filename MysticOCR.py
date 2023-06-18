@@ -88,6 +88,7 @@ def main():
 
         avg_confidence = calc_avg_confidence(bounds)
         bounds.append(avg_confidence)
+        bounds.append(file)
         if avg_confidence >= args.threshold:
             if args.success_dir is not None:
                 os.makedirs(args.success_dir, exist_ok=True)
