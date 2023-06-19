@@ -43,8 +43,8 @@ def main():
     log(f'Creating EasyOCR reader...')
     reader = easyocr.Reader(['en'], gpu=True)
     writer = None
-    pbar = None # Todo
-    log_file = None # Todo
+    pbar = None  # Todo
+    log_file = None  # Todo
     done = False
     file = None
     count = 0
@@ -54,13 +54,14 @@ def main():
         writer = csv.writer(output_file)
     if args.progress is True:
         log(f'Creating progress bar...')
-        pbar = tqdm.tqdm(total=len(files)) # Todo
+        pbar = tqdm.tqdm(total=len(files))  # Todo
 
     def animated_loading():
         for c in itertools.cycle(['|', '/', '-', '\\']):
             if done:
                 break
-            sys.stdout.write(f'\rScanning images: {c} {count}/{len(files)} OR {round((count/len(files)*100),3)}% completed')
+            sys.stdout.write(
+                f'\rScanning images: {c} {count}/{len(files)} OR {round((count/len(files)*100),3)}% completed')
             sys.stdout.flush()
             time.sleep(0.1)
         sys.stdout.write('\rDone!             ')
@@ -72,18 +73,17 @@ def main():
                                  workers=args.workers, detail=args.details, blocklist=args.blocklist,
                                  paragraph=args.paragraph, x_ths=args.x_ths, width_ths=args.width_ths, min_size=10)
         im = cv2.imread(file)
+        for bbox in bounds:
+            # Unpack the bounding box
+            tl, tr, br, bl = bbox[0]
+            tl = (int(tl[0]), int(tl[1]))
+            tr = (int(tr[0]), int(tr[1]))
+            br = (int(br[0]), int(br[1]))
+            bl = (int(bl[0]), int(bl[1]))
+            cv2.rectangle(im, tl, br, (10, 255, 0), 5)
+            # im = cv2.resize(im, (480, 600))
         if args.show_image is True:
-            for bbox in bounds:
-                # Unpack the bounding box
-                tl, tr, br, bl = bbox[0]
-                tl = (int(tl[0]), int(tl[1]))
-                tr = (int(tr[0]), int(tr[1]))
-                br = (int(br[0]), int(br[1]))
-                bl = (int(bl[0]), int(bl[1]))
-                cv2.rectangle(im, tl, br, (10, 255, 0), 2)
-            im = cv2.resize(im, (480, 600))
             cv2.imshow('Image', im)
-
             cv2.waitKey(1)  # 1 to make sure image updates
 
         avg_confidence = calc_avg_confidence(bounds)
