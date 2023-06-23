@@ -1,0 +1,20 @@
+# ALL VALUES ARE REQUIRED! BUT THEY MAY BE EMPTY!
+mystic:
+  command: scan
+  scan:
+    image_dir: ./data/
+    success_dir: ./success
+    fail_dir:  ./failure
+    output_db: ./results.db # this needs to point to something.
+    width_ths: 3
+    x_ths: 4
+    gpu: true
+    show_image: false #Whether or not to display the last image processed.
+    card:
+      type: "Legendary" # Legendary, Artifact, Creature, etc. "" for no deisgnated card type.
+      foil: false # Whether or not the cards you are scanning is foiled.
+      set: "" # Refer to https://draftsim.com/mtg-sets/ for the MTG set codes. "" for no designated set.
+      rarity: "Rare" # The rarity of the card. Ex. Rare, Uncommon, Rare uncommon, 
+
+
+    

@@ -36,6 +36,7 @@ def main():
 
         done = False
         count = 0
+
         def animated_loading():
             for c in itertools.cycle(['|', '/', '-', '\\']):
                 if done:

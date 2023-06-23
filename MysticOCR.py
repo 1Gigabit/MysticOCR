@@ -1,60 +1,34 @@
 import argparse
-import csv
 import glob
 import itertools
+import json
 import os
 import sys
-from threading import Thread
 import threading
 import time
-import easyocr
 import cv2
-import tqdm
-
-# Define the command-line arguments
-parser = argparse.ArgumentParser(description="Just an OCR reader for magic cards",
-                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("-i", "--image_dir", type=str, required=True)
-parser.add_argument("-o", "--output_file", type=str, required=True)
-parser.add_argument("-b", "--batch_size", type=int, default=1)
-parser.add_argument("-w", "--workers", type=int, default=0)
-parser.add_argument("-d", "--details", type=int, default=1)
-parser.add_argument("-bl", "--blocklist", type=str, default="")
-parser.add_argument("-p", "--paragraph", default=False)
-parser.add_argument("-P", "--progress", default=False)
-parser.add_argument("-show", "--show_image", default=True)
-parser.add_argument("-fd", "--failed_dir", type=str, default=None)
-parser.add_argument("-sd", "--success_dir", type=str, default=None)
-parser.add_argument("-th", "--threshold", type=float, default=0.6)
-parser.add_argument("-wth", "--width_ths", type=float, default=3)
-parser.add_argument("-xth", "--x_ths", type=float, default=4)
-parser.add_argument("-q", "--quiet", default=False)
-args = parser.parse_args()
-
-
-def log(message):
-    if args.quiet is False:
-        print(f'[{time.process_time()}] : {message}')
+import easyocr
+import yaml
+import sqlite3
+config: dict = yaml.load(open('mysticocr.yml', 'r'),
+                         Loader=yaml.FullLoader)['mystic']
 
 
 def main():
-    log(f'Opening image_dir...')
-    files = glob.glob(os.path.join(args.image_dir, "*.jpg"))
-    log(f'Creating EasyOCR reader...')
-    reader = easyocr.Reader(['en'], gpu=True)
-    writer = None
-    pbar = None  # Todo
-    log_file = None  # Todo
-    done = False
-    file = None
+
+    if (config.get('command') == "scan"):
+        scan()
+
+
+def scan():
+    files = glob.glob(os.path.join(config['scan']['image_dir'], "*.jpg"))
+    reader = easyocr.Reader(['en'], gpu=config['scan']['gpu'])
     count = 0
-    if args.output_file is not None:
-        log(f"Opening output CSV file for writing...")
-        output_file = open(args.output_file, "w")
-        writer = csv.writer(output_file)
-    if args.progress is True:
-        log(f'Creating progress bar...')
-        pbar = tqdm.tqdm(total=len(files))  # Todo
+    db_connection = sqlite3.connect(config['scan']['output_db'])
+    db_cursor = db_connection.cursor()
+    done = False
+    db_cursor.execute(
+        'CREATE TABLE IF NOT EXISTS ocr_results (id INTEGER PRIMARY KEY AUTOINCREMENT, file_name TEXT,card_type TEXT,foil TEXT,set TEXT,rarity TEXT,ocr_result TEXT);')
 
     def animated_loading():
         for c in itertools.cycle(['|', '/', '-', '\\']):
@@ -64,56 +38,55 @@ def main():
                 f'\rScanning images: {c} {count}/{len(files)} OR {round((count/len(files)*100),3)}% completed')
             sys.stdout.flush()
             time.sleep(0.1)
-        sys.stdout.write('\rDone!             ')
+
+    sys.stdout.write('\rDone!            ')
     t = threading.Thread(target=animated_loading, daemon=True)
     t.start()
     for file in files:
         count += 1
-        bounds = reader.readtext(file, batch_size=args.batch_size,
-                                 workers=args.workers, detail=args.details, blocklist=args.blocklist,
-                                 paragraph=args.paragraph, x_ths=args.x_ths, width_ths=args.width_ths, min_size=10)
-        im = cv2.imread(file)
-        for bbox in bounds:
-            # Unpack the bounding box
-            tl, tr, br, bl = bbox[0]
-            tl = (int(tl[0]), int(tl[1]))
-            tr = (int(tr[0]), int(tr[1]))
-            br = (int(br[0]), int(br[1]))
-            bl = (int(bl[0]), int(bl[1]))
-            cv2.rectangle(im, tl, br, (10, 255, 0), 5)
-            # im = cv2.resize(im, (480, 600))
-        if args.show_image is True:
-            cv2.imshow('Image', im)
+        result = reader.readtext(
+            file, width_ths=config['scan']['width_ths'], x_ths=config['scan']['x_ths'])
+        imagecv = cv2.imread(file)
+        if config['scan']['show_image'] is True:
+            for bbox in result:
+                # Unpack the bounding box
+                tl, tr, br, bl = bbox[0]  # type: ignore
+                tl = (int(tl[0]), int(tl[1]))
+                tr = (int(tr[0]), int(tr[1]))
+                br = (int(br[0]), int(br[1]))
+                bl = (int(bl[0]), int(bl[1]))
+                cv2.rectangle(imagecv.copy(), tl, br,
+                              (10, 255, 0), 2)  # type: ignore
+
+            imagecv = cv2.resize(imagecv, (480, 600))
+            cv2.imshow('Image', imagecv)
             cv2.waitKey(1)  # 1 to make sure image updates
+        if (config['scan']['success_dir'] != ""):
+            os.makedirs(config['scan']['success_dir'], exist_ok=True)
+            cv2.imwrite(os.path.join(
+                config['scan']['success_dir'], os.path.basename(file)), imagecv)
+        if (config['scan']['fail_dir'] != ""):
+            os.makedirs(config['scan']['fail_dir'], exist_ok=True)
+            cv2.imwrite(os.path.join(
+                config['scan']['fail_dir'], os.path.basename(file)), imagecv)
 
-        avg_confidence = calc_avg_confidence(bounds)
-        bounds.append(avg_confidence)
-        bounds.append(file)
-        if avg_confidence >= args.threshold:
-            if args.success_dir is not None:
-                os.makedirs(args.success_dir, exist_ok=True)
-                success_file = os.path.join(
-                    args.success_dir, f"{avg_confidence}__"+os.path.basename(file))
-                cv2.imwrite(success_file, im)
-        else:
-            if args.failed_dir is not None:
-                os.makedirs(args.failed_dir, exist_ok=True)
-                failed_file = os.path.join(
-                    args.failed_dir, f"{avg_confidence}__"+os.path.basename(file))
-                cv2.imwrite(failed_file, im)
-        if writer is not None:
-            writer.writerow(bounds)
-    done = True
+        db_connection.execute(
+            "INSERT INTO ocr_results (file_name,card_type,foil,set,rarity,ocr_result) VALUES (?,?,?,?,?,?);",
+            (file, config['scan']['card']['type'],
+             config['scan']['card']['foil'],
+             config['scan']['card']['set'],
+             config['scan']['card']['rarity'], f'{result}'))
+        db_connection.commit()
 
 
-def calc_avg_confidence(bounds):
-    if len(bounds) == 0:
+def calc_avg_confidence(result):
+    if len(result) == 0:
         return -1
     sum_confidence = 0
-    for bbox in bounds:
+    for bbox in result:
         confidence = bbox[-1]
         sum_confidence += confidence
-    return sum_confidence / len(bounds)
+    return sum_confidence / len(result)
 
 
 if __name__ == '__main__':

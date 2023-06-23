@@ -1,4 +1,4 @@
-# OCR Magic Card Reader
+# OCR Magic Card Reader (README IS OUT OF DATE)
 
 This is a Python script that uses EasyOCR to perform optical character recognition (OCR) on images of Magic cards. It extracts text from the images and optionally saves the results to a CSV file. It also provides options for displaying the annotated images and monitoring progress.
 # Steps
