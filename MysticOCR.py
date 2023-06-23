@@ -55,8 +55,8 @@ def scan():
                 tr = (int(tr[0]), int(tr[1]))
                 br = (int(br[0]), int(br[1]))
                 bl = (int(bl[0]), int(bl[1]))
-                cv2.rectangle(imagecv.copy(), tl, br,
-                              (10, 255, 0), 2)  # type: ignore
+                cv2.rectangle(imagecv.copy(),
+                              (tl[0], tl[1], br[1], br[0]), (10, 255, 0), 2)
 
             imagecv = cv2.resize(imagecv, (480, 600))
             cv2.imshow('Image', imagecv)
