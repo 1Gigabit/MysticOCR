@@ -10,7 +10,6 @@ mystic:
     gpu: true
     show_image: false #Whether or not to display the last image processed.
     card:
-      type_as_parent_dir_name: false
       type: "Legendary" # Legendary, Artifact, Creature, etc. "" for no deisgnated card type.
       foil: false # Whether or not the cards you are scanning is foiled.
       set: "" # Refer to https://draftsim.com/mtg-sets/ for the MTG set codes. "" for no designated set.
