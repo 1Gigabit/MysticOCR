@@ -1,10 +1,9 @@
 # ALL VALUES ARE REQUIRED! BUT THEY MAY BE EMPTY!
 mystic:
+  overwrite_db: true
   command: scan
   scan:
     image_dir: ./data/
-    success_dir: ./success
-    fail_dir:  ./failure
     output_db: ./results.db # this needs to point to something.
     width_ths: 3
     x_ths: 4

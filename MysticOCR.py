@@ -27,6 +27,8 @@ def scan():
     db_connection = sqlite3.connect(config['scan']['output_db'])
     db_cursor = db_connection.cursor()
     done = False
+    if config['overwrite_db'] is True:
+        db_cursor.execute('DROP TABLE IF EXISTS ocr_results;')
     db_cursor.execute(
         'CREATE TABLE IF NOT EXISTS ocr_results (id INTEGER PRIMARY KEY AUTOINCREMENT, file_name TEXT,card_type TEXT,foil TEXT,set TEXT,rarity TEXT,ocr_result TEXT);')
 
@@ -61,14 +63,6 @@ def scan():
             imagecv = cv2.resize(imagecv, (480, 600))
             cv2.imshow('Image', imagecv)
             cv2.waitKey(1)  # 1 to make sure image updates
-        if (config['scan']['success_dir'] != ""):
-            os.makedirs(config['scan']['success_dir'], exist_ok=True)
-            cv2.imwrite(os.path.join(
-                config['scan']['success_dir'], os.path.basename(file)), imagecv)
-        if (config['scan']['fail_dir'] != ""):
-            os.makedirs(config['scan']['fail_dir'], exist_ok=True)
-            cv2.imwrite(os.path.join(
-                config['scan']['fail_dir'], os.path.basename(file)), imagecv)
 
         db_connection.execute(
             "INSERT INTO ocr_results (file_name,card_type,foil,set,rarity,ocr_result) VALUES (?,?,?,?,?,?);",
