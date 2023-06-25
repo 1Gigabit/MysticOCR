@@ -165,6 +165,7 @@ successful*
 db.json
 failed*
 result.csv
+output
 data.db
 default-cards-20230618090656.json
 database.db
