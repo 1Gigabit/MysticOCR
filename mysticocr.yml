@@ -3,7 +3,7 @@ mystic:
   overwrite_db: true
   command: match
   scan:
-    image_dir: "./data/Testing"
+    image_dir: "data\\Rares"
     output_db: ./results.db # this needs to point to something.
     output_dir: ./output
     width_ths: 3
@@ -11,10 +11,9 @@ mystic:
     gpu: true
     show_image: true #Whether or not to display the last image processed.
     card:
-      confidence_threshold: 0.50
       sideways: false
       location: "Special cards" # Location of the cards in your collection
-      foil: true # Whether or not the cards you are scanning is foiled.
+      foil: false # Whether or not the cards you are scanning is foiled.
       showcase: false # Whether or not the cards are showcase.
   match:
     db: ./results.db
