@@ -57,11 +57,7 @@ def scan():
             imagecv = cv2.rotate(imagecv, cv2.ROTATE_90_CLOCKWISE)
 
         result = reader.readtext(
-            imagecv, width_ths=config['scan']['width_ths'], x_ths=config['scan']['x_ths'])
-        ocr_1st_element = result[0][2]
-        ocr_2nd_element = result[0][2]
-        confidence = max([ocr_1st_element, ocr_2nd_element])
-
+            imagecv, width_ths=config['scan']['width_ths'], x_ths=config['scan']['x_ths'], batch_size=50)
         if config['scan']['show_image'] is True:
             for bbox in result:
                 # Unpack the bounding box
@@ -71,34 +67,24 @@ def scan():
                 br = (int(br[0]), int(br[1]))
                 bl = (int(bl[0]), int(bl[1]))
                 cv2.rectangle(imagecv, tl, br, (10, 255, 0),
-                              10)  # type: ignore
-                cv2.putText(imagecv, f'{confidence}',
-                            (tl[0], tl[1] + 80), cv2.QT_FONT_NORMAL, 1, (0, 255, 0))
-
+                              10)
             cv2.imwrite(os.path.join(
                 config['scan']['output_dir'], os.path.basename(file)), imagecv)
             cv2.imshow('Image', imagecv)
             cv2.waitKey(1)  # 1 to make sure image updates
-        if (confidence < config['scan']['card']['confidence_threshold']):
-            print(
-                f'\r\t\tFailed on {file} {confidence} {result[0][1]}')
-            db_connection.execute(
-                "INSERT INTO ocr_results (file_name,location,foil,showcase,ocr_result,pass,image) VALUES (?,?,?,?,?,?,?);",
-                (file, config['scan']['card']['location'],
-                 config['scan']['card']['foil'], config['scan']['card']['showcase'], f'{result}', False, sqlite3.Binary(cv2.imencode(".jpg", originalimagecv)[1].tobytes())))
-            continue
-        else:
-            db_connection.execute(
-                "INSERT INTO ocr_results (file_name,location,foil,showcase,ocr_result,pass,image) VALUES (?,?,?,?,?,?,?);",
-                (file, config['scan']['card']['location'],
-                 config['scan']['card']['foil'], config['scan']['card']['showcase'], f'{result}', True, sqlite3.Binary(cv2.imencode(".jpg", originalimagecv)[1].tobytes())))
+        db_connection.execute(
+            "INSERT INTO ocr_results (file_name,location,foil,showcase,ocr_result,pass,image) VALUES (?,?,?,?,?,?,?);",
+            (file, config['scan']['card']['location'],
+             config['scan']['card']['foil'], config['scan']['card']['showcase'], f'{result}', True, sqlite3.Binary(cv2.imencode(".jpg", originalimagecv)[1].tobytes())))
         db_connection.commit()
     done = True
 
 
 def match():
-    card_db = json.loads(
+    card_db: list = json.loads(
         open(config['match']['card_db'], 'r', encoding='utf-8').read())
+    card_set = {card.get('name') for card in card_db}
+    print(card_set)
     db_connection = sqlite3.connect(config['match']['db'])
     db_cursor = db_connection.cursor()
     db_cursor.execute(
@@ -109,7 +95,6 @@ def match():
         db_connection.execute("DROP TABLE IF EXISTS match_results;")
     db_connection.execute(
         "CREATE TABLE IF NOT EXISTS match_results (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,file_name TEXT,foil TEXT, showcase TEXT,location TEXT, ocr_result TEXT);")
-    done = False
     count = 0
     length = len(ocr_results)
     for result in ocr_results:
@@ -119,8 +104,7 @@ def match():
         ocr_1st_element = ast.literal_eval(result[5])[0][1]
         ocr_2nd_element = ast.literal_eval(result[5])[1][1]
         ocr_3rd_element = ast.literal_eval(result[5])[2][1]
-        for card in card_db:
-            name: str = card.get('name')
+        for name in card_set:
             name = name.split("//")[0]
             fuzz_ratio_1 = fuzz.ratio(ocr_1st_element, name)
             fuzz_ratio_2 = fuzz.ratio(ocr_2nd_element, name)
@@ -131,13 +115,12 @@ def match():
             fuzz_ratio = max([fuzz_ratio_1, fuzz_ratio_2, fuzz_ratio_3])
             if fuzz_ratio > highest_ratio:
                 highest_ratio = fuzz_ratio
-                highest_card = card
+                highest_card = name
         print(
-            f'highest_ratio: {highest_ratio} :{highest_card.get("name")} : {count}/{length} : {result[1]} : CON: {result[2]}')
+            f'highest_ratio: {highest_ratio} :{highest_card} : {count}/{length} : {result[1]} : CON: {result[2]}')
         db_connection.execute("INSERT INTO match_results (name,file_name,location,foil,showcase,ocr_result) VALUES (?,?,?,?,?,?);", (
-                              highest_card['name'], result[1], result[2], result[3], result[4], result[5]))
+                              highest_card, result[1], result[2], result[3], result[4], result[5]))
         db_connection.commit()
-    done = True
 
 
 def calc_avg_confidence(result):
