@@ -1,9 +1,9 @@
 # ALL VALUES ARE REQUIRED! BUT THEY MAY BE EMPTY!
 mystic:
-  overwrite_db: true
+  overwrite_db: true # Reccomended
   command: match
   scan:
-    image_dir: "data\\Rares"
+    image_dir: "./data"
     output_db: ./results.db # this needs to point to something.
     output_dir: ./output
     width_ths: 3
@@ -15,6 +15,7 @@ mystic:
       location: "Special cards" # Location of the cards in your collection
       foil: false # Whether or not the cards you are scanning is foiled.
       showcase: false # Whether or not the cards are showcase.
+      borderless: false
   match:
     db: ./results.db
     card_db: ./db.json # Get default-cards from scryfall's bulk data
