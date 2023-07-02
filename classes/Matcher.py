@@ -1,5 +1,4 @@
 import ast
-from concurrent.futures import thread
 import difflib
 from time import sleep
 
@@ -37,7 +36,7 @@ class Matcher:
         ]
 
     def create_workers(self):
-        with concurrent.futures.ProcessPoolExecutor(8) as executor:
+        with concurrent.futures.ThreadPoolExecutor(8) as executor:
             futures = [
                 executor.submit(process_chunk, chunk)
                 for chunk in self.ocr_result_chunks
@@ -64,7 +63,7 @@ class Matcher:
                 insert_query,
                 (card_id, card_name, ocr_result, card_price, card_foil, card_ratio),
             )
-            self.db.db_connection.commit()
+        self.db.db_connection.commit()
 
     def insert_failed_cards(self, failed_cards):
         cursor = self.db.db_connection.cursor()
@@ -80,52 +79,77 @@ class Matcher:
                 insert_query,
                 (card_id, card_name, ocr_result, card_price, card_foil, card_ratio),
             )
-            self.db.db_connection.commit()
+        self.db.db_connection.commit()
 
     def search_with_local_db(self):
-        for ocr_card in self.ocr_db_cards:
-            ocr_data = ast.literal_eval(ocr_card.ocr_result)[:3]
-            ocr_text = [data[1] for data in ocr_data]
-            if len(ocr_text) != 0:
-                sleep(0.1)
-                response = requests.get(
-                    f"https://api.scryfall.com/cards/search?unique=prints&q='{ocr_text[0]}'"
-                )
-                if response.status_code == 200:
-                    response_data = response.json().get("data")
-                    smallest_card = get_lowest_priced_card(response_data)
-
-                    if smallest_card:
-                        print(
-                            response.json().get("data")[0].get("name"),
-                            smallest_card["smallest_price"],
-                        )
-                        self.insert_passed_cards(
-                            [create_proper_card(ocr_card, smallest_card)]
-                        )
-
-                else:
-                    confirmed_card_name = difflib.get_close_matches(
-                        ocr_text[1],
-                        [card.get("name") for card in self.card_set],  # type: ignore
-                        n=3,
-                        cutoff=1,
+        with requests.Session() as session:
+            for ocr_card in self.ocr_db_cards:
+                ocr_data = ast.literal_eval(ocr_card.ocr_result)[:3]
+                ocr_text = [data[1] for data in ocr_data]
+                if len(ocr_text) != 0:
+                    sleep(0.1)
+                    response = session.get(
+                        f"https://api.scryfall.com/cards/search?unique=prints&q='{ocr_text[0]}'"
                     )
-                    if len(confirmed_card_name) != 0:
-                        confirmed_card_name = confirmed_card_name[0]
-                        cards = [
-                            card
-                            for card in self.card_set
-                            if card.get("name") == confirmed_card_name  # type: ignore
-                        ]
-                        print(f"Secondary match OK: {confirmed_card_name}")
-                        smallest_card = get_lowest_priced_card(cards)
-                        if smallest_card is not None:
+                    if response.status_code == 200:
+                        response_data = response.json().get("data")
+                        smallest_card = get_lowest_priced_card(response_data)
+
+                        if smallest_card:
+                            print(
+                                response_data[0].get("name"),
+                                smallest_card["smallest_price"],
+                            )
                             self.insert_passed_cards(
                                 [create_proper_card(ocr_card, smallest_card)]
                             )
+
                     else:
-                        print(f"Secondary match FAILED: {ocr_text[1]}")
+                        print(ocr_text)
+                        result = False
+                        for index in range(0, 3):
+                            result = self.secondary_match(ocr_text, ocr_card, index)
+                            if result:
+                                break
+                        if result is not True:
+                            print(f"COMPLETELY FAILED: {ocr_card.file_name}")
+                            self.insert_failed_cards(
+                                [
+                                    {
+                                        "id": ocr_card.id,
+                                        "card": ocr_card.file_name,
+                                        "ratio": 0.0,
+                                        "price": 0.0,
+                                        "foil": ocr_card.type,
+                                        "ocr": ocr_card.ocr_result,
+                                    }
+                                ]
+                            )
+
+    def secondary_match(self, ocr_text, ocr_card, match_index):
+        confirmed_card_name = difflib.get_close_matches(
+            ocr_text[match_index],
+            [card.get("name") for card in self.card_set],  # type: ignore
+            n=3,
+            cutoff=0.8,
+        )
+        if len(confirmed_card_name) != 0:
+            confirmed_card_name = confirmed_card_name[0]
+            cards = [
+                card
+                for card in self.card_set
+                if card.get("name") == confirmed_card_name  # type: ignore
+            ]
+            smallest_card = get_lowest_priced_card(cards)
+            if smallest_card is not None:
+                print(f"Secondary match OK: {confirmed_card_name}")
+                self.insert_passed_cards([create_proper_card(ocr_card, smallest_card)])
+                return True
+            print(f"Secondary match (NO PRICES) FAILED: {confirmed_card_name}")
+            return False
+        else:
+            print(f"Secondary match FAILED: {ocr_text[match_index]}")
+            return False
 
 
 def create_proper_card(ocr_card, smallest_card):
