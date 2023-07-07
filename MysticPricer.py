@@ -1,4 +1,3 @@
-
 import ast
 import glob
 import json
@@ -11,3 +10,5 @@ import psycopg2
 import yaml
 from fuzzywuzzy import fuzz
 import concurrent.futures
+
+from Card import Card

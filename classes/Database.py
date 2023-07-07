@@ -5,6 +5,7 @@ from typing import Any
 import cv2
 import psycopg2
 from psycopg2.extensions import AsIs
+from pymongo import CursorType
 import tqdm
 from .Card import OCRCard
 from .Card import Card
@@ -63,7 +64,7 @@ class Database:
             + "ratio                INTEGER     , "
             + "name                 TEXT     , "
             + "ocr_result TEXT,"
-            + "price TEXT,"
+            + "price FLOAT,"
             + "foil TEXT,"
             "FOREIGN KEY ( ocr_id ) REFERENCES cards( id ) " + ");"
         )
@@ -72,9 +73,9 @@ class Database:
 
     def insert_ocr_result(self, file_path, ocr_result, original_imagecv):
         split_path = os.path.dirname(file_path).split("\\")
-        location = split_path[2]
-        type = split_path[3]
-        date = split_path[4]
+        location = split_path[3]
+        type = split_path[4]
+        date = split_path[5]
         self.db_connection.cursor().execute(
             "INSERT INTO cards(file_name,location,type,date,showcase,ocr_result,image) VALUES (%s,%s,%s,%s,%s,%s,%s);",
             (
@@ -119,3 +120,18 @@ class Database:
                 for card in card_db:
                     self.import_card_for_set(cursor, card)
                     pbar.update()
+
+    def fetch_card_file_names(self):
+        cursor: psycopg2.cursor = self.db_connection.cursor()
+        cursor.execute("SELECT file_name FROM cards;")
+        return cursor.fetchall()
+
+    def fetch_unmatched_file_names(self):
+        cursor: psycopg2.cursor = self.db_connection.cursor()
+        cursor.execute(
+            """SELECT file_name FROM cards
+	LEFT JOIN match_results ON cards.id = match_results.ocr_id
+	LEFT JOIN failed_results ON cards.id = failed_results.ocr_id
+WHERE match_results.ocr_id is null and failed_results.ocr_id is null"""
+        )
+        return cursor.fetchall()
