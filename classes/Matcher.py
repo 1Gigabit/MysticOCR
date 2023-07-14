@@ -1,7 +1,8 @@
 import ast
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import difflib
 import psycopg2
-import requests
+import concurrent.futures
 
 from classes.Card import Card, OCRCard
 from classes.Database import Database
@@ -74,8 +75,14 @@ class Matcher:
             self.match_singular_card(ocr_card)
 
     def search_with_local_db(self):
-        for ocr_card in self.ocr_db_cards:
-            self.match_singular_card(ocr_card)
+        # for chunk in self.ocr_result_chunks:
+        #     self.insert_passed_cards(match_chunk(self.card_set, chunk))
+        with ProcessPoolExecutor(max_workers=19) as executor:
+            futures = []
+            for chunk in self.ocr_result_chunks:
+                futures.append(executor.submit(match_chunk, self.card_set, chunk))
+            for future in concurrent.futures.as_completed(futures):
+                self.insert_passed_cards(future.result())
 
     def match_singular_card(self, ocr_card):
         ocr_data = ast.literal_eval(ocr_card.ocr_result)[:3]
@@ -126,6 +133,43 @@ class Matcher:
             return False
 
 
+def match_singular_card_no_insert(ocr_card, card_set):
+    ocr_data = ast.literal_eval(ocr_card.ocr_result)[:3]
+    ocr_text = [data[1] for data in ocr_data]
+    result = False
+    if len(ocr_text) > 0:
+        for index in range(0, 3):
+            result = secondary_match_no_insert(card_set, ocr_text, ocr_card, index)
+            if result is not False:
+                return result
+    return False
+
+
+def secondary_match_no_insert(card_set, ocr_text, ocr_card, match_index):
+    confirmed_card_name = difflib.get_close_matches(
+        ocr_text[match_index],
+        [card.get("name") for card in card_set],  # type: ignore
+        n=3,
+        cutoff=0.85,
+    )
+    if len(confirmed_card_name) != 0:
+        confirmed_card_name = confirmed_card_name[0]
+        cards = [
+            card
+            for card in card_set
+            if card.get("name") == confirmed_card_name  # type: ignore
+        ]
+        smallest_card = get_lowest_priced_card(cards, ocr_card)
+        if smallest_card is not None:
+            print(f"Secondary match OK: {confirmed_card_name}")
+            return create_proper_card(ocr_card, smallest_card)
+        print(f"Secondary match (NO PRICES) FAILED: {confirmed_card_name}")
+        return False
+    else:
+        print(f"Secondary match FAILED: {ocr_text[match_index]}")
+        return False
+
+
 def create_proper_card(ocr_card, smallest_card):
     proper_smallest_card = {
         "id": ocr_card.id,
@@ -163,3 +207,12 @@ def get_lowest_priced_card(cards, ocr_card: OCRCard):
         if filtered_cards:
             filtered_cards.sort(key=lambda x: x.get("smallest_price"), reverse=False)
     return filtered_cards[0] if len(filtered_cards) >= 1 else None
+
+
+def match_chunk(card_set, chunk):
+    results = []
+    for ocr_card in chunk:
+        result = match_singular_card_no_insert(ocr_card, card_set)
+        if result is not False:
+            results.append(result)
+    return results

@@ -21,12 +21,16 @@ class Database:
             database="mysticocr",
             user="Chad",
             password="Dashwood",
-            host="localhost",
+            host="srvr042.com",
             port="5432",
         )
         ocr_cursor = self.db_connection.cursor()
 
-        if config["overwrite_db"] == True and config["command"] == "scan":
+        if (
+            config["overwrite_db"] == True
+            and config["command"] == "scan"
+            or config["command"] == "scan_new"
+        ):
             ocr_cursor.execute("DROP TABLE IF EXISTS match_results;")
             ocr_cursor.execute("DROP TABLE IF EXISTS failed_results;")
             ocr_cursor.execute("DROP TABLE IF EXISTS cards;")
@@ -44,7 +48,11 @@ class Database:
             + ");"
         )
 
-        if config["overwrite_db"] == True and config["command"] == "match":
+        if (
+            config["overwrite_db"] == True
+            and config["command"] == "match"
+            or config["command"] == "match_new"
+        ):
             ocr_cursor.execute("DROP TABLE IF EXISTS failed_results;")
             ocr_cursor.execute("DROP TABLE IF EXISTS match_results;")
         ocr_cursor.execute(
@@ -77,15 +85,14 @@ class Database:
         type = split_path[4]
         date = split_path[5]
         self.db_connection.cursor().execute(
-            "INSERT INTO cards(file_name,location,type,date,showcase,ocr_result,image) VALUES (%s,%s,%s,%s,%s,%s,%s);",
+            "INSERT INTO cards(file_name,location,type,date,showcase,ocr_result) VALUES (%s,%s,%s,%s,%s,%s);",
             (
-                file_path,
+                file_path.replace("\\", "/"),
                 location,
                 type,
                 date,
                 self.config["scan"]["card"]["showcase"],
                 f"{ocr_result}",
-                sqlite3.Binary(cv2.imencode(".jpg", original_imagecv)[1].tobytes()),
             ),
         )
         self.db_connection.commit()
