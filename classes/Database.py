@@ -1,11 +1,6 @@
-import json
 import os
-import sqlite3
 from typing import Any
-import cv2
 import psycopg2
-from psycopg2.extensions import AsIs
-from pymongo import CursorType
 import tqdm
 from .Card import OCRCard
 from .Card import Card
@@ -21,15 +16,13 @@ class Database:
             database="mysticocr",
             user="Chad",
             password="Dashwood",
-            host="srvr042.com",
+            host="chadserver.local",
             port="5432",
         )
         ocr_cursor = self.db_connection.cursor()
 
-        if (
-            config["overwrite_db"] == True
-            and config["command"] == "scan"
-            or config["command"] == "scan_new"
+        if config["overwrite_db"] == True and (
+            config["command"] == "scan" or config["command"] == "scan_new"
         ):
             ocr_cursor.execute("DROP TABLE IF EXISTS match_results;")
             ocr_cursor.execute("DROP TABLE IF EXISTS failed_results;")
@@ -48,10 +41,8 @@ class Database:
             + ");"
         )
 
-        if (
-            config["overwrite_db"] == True
-            and config["command"] == "match"
-            or config["command"] == "match_new"
+        if config["overwrite_db"] == True and (
+            config["command"] == "match" or config["command"] == "match_new"
         ):
             ocr_cursor.execute("DROP TABLE IF EXISTS failed_results;")
             ocr_cursor.execute("DROP TABLE IF EXISTS match_results;")
@@ -142,3 +133,25 @@ class Database:
 WHERE match_results.ocr_id is null and failed_results.ocr_id is null"""
         )
         return cursor.fetchall()
+
+    def insert_passed_card(self, ocr_card: OCRCard, card: dict):
+        cursor: psycopg2.cursor = self.db_connection.cursor()
+        insert_query = "INSERT INTO match_results (ocr_id, name, ocr_result, price, foil) VALUES (%s, %s, %s, %s, %s)"
+        cursor.execute(
+            insert_query,
+            (
+                ocr_card.id,
+                card.get("card", {}).get("name"),
+                ocr_card.ocr_result,
+                card.get("lowest_price"),
+                ocr_card.type,
+            ),
+        )
+        print(f"Inserting: {card.get('card',{}).get('name')}")
+        self.db_connection.commit()
+
+    def insert_failed_cards(self, failed_cards):
+        cursor: psycopg2.cursor = self.db_connection.cursor()
+        insert_query = "INSERT INTO failed_results (ocr_id, name, ocr_result, price, foil) VALUES (%s, %s, %s, %s, %s)"
+
+        self.db_connection.commit()

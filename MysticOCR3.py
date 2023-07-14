@@ -33,7 +33,6 @@ def main():
         )
         # db.import_ca rd_set(card_set)
         matcher: Matcher = Matcher(config, card_set, db)
-        matcher.chunkify(25)
         matcher.search_with_local_db()
     elif config.get("command") == "scan_new":
         db_file_names = [file[0] for file in db.fetch_card_file_names()]
@@ -45,14 +44,6 @@ def main():
                 if config["scan"]["show_image"]:
                     ocr.show_image(imagecv, ocr_result)
                 db.insert_ocr_result(file, ocr_result, imagecv)
-    elif config.get("command") == "match_new":
-        db_file_names = [file[0] for file in db.fetch_unmatched_file_names()]
-        card_set = json.loads(
-            open(f"{date.today()}.json", "r", encoding="utf-8").read()
-        )
-        matcher: Matcher = Matcher(config, card_set, db)
-        matcher.chunkify(1)
-        matcher.search_only_these_file_names(db_file_names)
     elif config.get("command") == "price":
         mysticPricer = MysticPricer(db)
         mysticPricer.download_db()
