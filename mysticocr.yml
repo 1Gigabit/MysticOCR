@@ -10,12 +10,6 @@ mystic:
     x_ths: 12
     gpu: true
     show_image: true #Whether or not to display the last image processed.
-    card:
-      sideways: false
-      location: "Special cards" # Location of the cards in your collection
-      foil: false # Whether or not the cards you are scanning is foiled.
-      showcase: false # Whether or not the cards are showcase.
-      borderless: false
   match:
     db: ./results.db
     card_db: ./db.json # Get default-cards from scryfall's bulk data

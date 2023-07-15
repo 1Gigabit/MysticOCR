@@ -70,7 +70,7 @@ class Database:
         self.db_connection.commit()
         return None
 
-    def insert_ocr_result(self, file_path, ocr_result, original_imagecv):
+    def insert_ocr_result(self, file_path, ocr_result):
         split_path = os.path.dirname(file_path).split("\\")
         location = split_path[3]
         type = split_path[4]
@@ -143,7 +143,7 @@ WHERE match_results.ocr_id is null and failed_results.ocr_id is null"""
                 ocr_card.id,
                 card.get("card", {}).get("name"),
                 ocr_card.ocr_result,
-                card.get("lowest_price"),
+                card.get("smallest_price"),
                 ocr_card.type,
             ),
         )

@@ -26,14 +26,13 @@ def main():
             ocr_result, imagecv = ocr.scan_file(file)
             if config["scan"]["show_image"]:
                 ocr.show_image(imagecv, ocr_result)
-            db.insert_ocr_result(file, ocr_result, imagecv)
+            db.insert_ocr_result(file, ocr_result)
     elif config.get("command") == "match":
         card_set = json.loads(
             open(f"{date.today()}.json", "r", encoding="utf-8").read()
         )
-        # db.import_ca rd_set(card_set)
         matcher: Matcher = Matcher(config, card_set, db)
-        matcher.search_with_local_db()
+        matcher.search_multi()
     elif config.get("command") == "scan_new":
         db_file_names = [file[0] for file in db.fetch_card_file_names()]
         ocr: MysticOCR = load_ocr(config)
@@ -43,7 +42,7 @@ def main():
                 ocr_result, imagecv = ocr.scan_file(file)
                 if config["scan"]["show_image"]:
                     ocr.show_image(imagecv, ocr_result)
-                db.insert_ocr_result(file, ocr_result, imagecv)
+                db.insert_ocr_result(file, ocr_result)
     elif config.get("command") == "price":
         mysticPricer = MysticPricer(db)
         mysticPricer.download_db()
